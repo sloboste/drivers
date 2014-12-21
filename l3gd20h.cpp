@@ -21,6 +21,7 @@ L3GD20HSensor::L3GD20HSensor(I2CAdapter * i2cAdPtr,
 	}
 	verifyId();
 	setSensitivity(sensitivity);
+	calibrateXYZ();
 }
 
 bool L3GD20HSensor::verifyId(void)
@@ -98,12 +99,12 @@ void L3GD20HSensor::getRawXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
 	uint8_t txBuff[6] = { OUT_X_L, OUT_X_H, OUT_Y_L, OUT_Y_H, OUT_Z_L, OUT_Z_H };
 	uint8_t rxBuff[6];
 	i2cAdapterPtr->read(L3GD20H_I2C_ADDR_7BIT, txBuff, 6, rxBuff, 6);
-	DEBUGOUT("X_L = %x\n", rxBuff[0]);
-	DEBUGOUT("X_H = %x\n", rxBuff[1]);
-	DEBUGOUT("Y_L = %x\n", rxBuff[2]);
-	DEBUGOUT("Y_H = %x\n", rxBuff[3]);
-	DEBUGOUT("Z_L = %x\n", rxBuff[4]);
-	DEBUGOUT("Z_H = %x\n", rxBuff[5]);
+	//DEBUGOUT("X_L = %x\n", rxBuff[0]);
+	//DEBUGOUT("X_H = %x\n", rxBuff[1]);
+	//DEBUGOUT("Y_L = %x\n", rxBuff[2]);
+	//DEBUGOUT("Y_H = %x\n", rxBuff[3]);
+	//DEBUGOUT("Z_L = %x\n", rxBuff[4]);
+	//DEBUGOUT("Z_H = %x\n", rxBuff[5]);
 	x = rxBuff[0] + (rxBuff[1] << 8);
 	y = rxBuff[2] + (rxBuff[3] << 8);
 	z = rxBuff[4] + (rxBuff[5] << 8);

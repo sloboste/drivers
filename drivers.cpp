@@ -1,6 +1,6 @@
 /*
 ===============================================================================
- Name        : main.c
+ Name        : drivers.cpp
  Author      : $(author)
  Version     :
  Copyright   : $(copyright)
@@ -13,6 +13,7 @@
 
 #include "bmp180.hpp"
 #include "l3gd20h.hpp"
+//#include"lsm303dlhc.hpp"
 
 int main(void) {
 
@@ -34,8 +35,11 @@ int main(void) {
 	BMP180Sensor bmp(false, &i2cAd, STANDARD);
 
 	// L3GD20H
-	L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
-	gyro.powerOnEnXYZ();
+	//L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
+	//gyro.powerOnEnXYZ();
+
+	// LSM303DLC
+	//LSM303DLHCSensor mag(&i2cAd);
 
     // Force the counter to be placed into memory
     volatile static int i = 0 ;
@@ -79,10 +83,11 @@ int main(void) {
 		/* Poll bmp sensor
 		int32_t temperature = -1;
 		int32_t pressure = -1;
-		bmp.getTempAndPres(temperature, pressure/*, FARENHEIT*);
+		bmp.getTempAndPres(temperature, pressure);
 		DEBUGOUT("Temperature = %d degrees C\n", temperature/10);
 		DEBUGOUT("Pressure = %d Pa\n", pressure);
-		DEBUGOUT("--------\n");*/
+		DEBUGOUT("--------\n");
+		*/
 
 		// Poll gyro
 		int32_t x;
@@ -92,6 +97,9 @@ int main(void) {
 		DEBUGOUT("X = %d mdps\n", x);
 		DEBUGOUT("Y = %d mdps\n", y);
 		DEBUGOUT("Z = %d mdps\n", z);
+
+		// Poll mag
+		//mag.verifyId();
 	}
 
     return 0 ;

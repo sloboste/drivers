@@ -73,14 +73,10 @@ private:
 	enum modeEnum mode;
 	bool verifyId(void);
 	bool getCalData(void);
-	int16_t getRawPressure(void);
+	int32_t getRawPressure(void);
 	int16_t getRawTemperature(void);
 public:
 	BMP180Sensor(bool useTestVals, I2CAdapter * i2cAdPtr, enum modeEnum m);
-	void getTempAndPres(
-			int32_t &temperature,
-			int32_t &pressure/*,
-			enum tempUnitsEnum units*/);
-};
+	void getTempAndPres(int32_t &temperature, int32_t &pressure);
 
 #endif /* DRIVERS_SRC_BMP180_HPP_ */

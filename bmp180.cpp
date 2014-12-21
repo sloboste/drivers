@@ -192,15 +192,15 @@ bool BMP180Sensor::getCalData(void)
 }
 
 
-int16_t BMP180Sensor::getRawPressure(void) // MAYBE BROKEN!!
+int32_t BMP180Sensor::getRawPressure(void)
 {
 	if (useTestNumbers) {
 		return 23843;
 	}
 
-	int16_t rawPressure;
+	int32_t rawPressure;
 	// Write pressure command to control reg
-	uint8_t txBuff[2] = { REG_CONTROL, READPRESSURECMD };
+	uint8_t txBuff[2] = { REG_CONTROL, READPRESSURECMD + (mode << 6) };
 	i2cAdapterPtr->write(BMP180_I2C_ADDR_7BIT, txBuff, 2);
 	// Wait 4.5ms for sensor to take measurement
 	static volatile int i;
@@ -209,21 +209,26 @@ int16_t BMP180Sensor::getRawPressure(void) // MAYBE BROKEN!!
 	}
 	// Read from the data reg
 	txBuff[0] = REG_PRESSUREDATA;
-	uint8_t rxBuff[2];
-	i2cAdapterPtr->read(BMP180_I2C_ADDR_7BIT, txBuff, 1, rxBuff, 2);
-	rawPressure = rxBuff[1] + (rxBuff[0] << 8);
+	uint8_t rxBuff[3];
+	if (mode == ULTRAHIGHRES) {
+		i2cAdapterPtr->read(BMP180_I2C_ADDR_7BIT, txBuff, 1, rxBuff, 3);
+	} else {
+		i2cAdapterPtr->read(BMP180_I2C_ADDR_7BIT, txBuff, 1, rxBuff, 2);
+		rxBuff[2] = 0;
+	}
+	rawPressure = (rxBuff[2] + (rxBuff[1] << 8) + (rxBuff[0] << 16)) >> (8 - mode);
 	return rawPressure;
 }
 
-int16_t BMP180Sensor::getRawTemperature(void) // BROKEN!!!
+int16_t BMP180Sensor::getRawTemperature(void)
 {
 	if (useTestNumbers) {
 		return 27898;
 	}
 
 	int16_t rawTemperature;
-	// Write pressure command to control reg
-	uint8_t txBuff[2] = { REG_CONTROL, READPRESSURECMD };
+	// Write temperature command to control reg
+	uint8_t txBuff[2] = { REG_CONTROL, READTEMPCMD };
 	i2cAdapterPtr->write(BMP180_I2C_ADDR_7BIT, txBuff, 2);
 	// Wait 4.5ms for sensor to take measurement
 	static volatile int i;
@@ -239,14 +244,11 @@ int16_t BMP180Sensor::getRawTemperature(void) // BROKEN!!!
 	return rawTemperature;
 }
 
-void BMP180Sensor::getTempAndPres(
-		int32_t &temperature,
-		int32_t &pressure/*,
-		enum tempUnitsEnum units*/)
+void BMP180Sensor::getTempAndPres(int32_t &temperature, int32_t &pressure)
 {
 	// Raw values
 	int16_t rawTemperature = getRawTemperature();
-	int16_t rawPressure = getRawPressure();
+	int32_t rawPressure = getRawPressure();
 
 	// True temperature calculation
 	int32_t x1 = (((int32_t)(rawTemperature) - (int32_t)(calData.ac6)) * (int32_t)(calData.ac5)) >> 15;
@@ -277,7 +279,7 @@ void BMP180Sensor::getTempAndPres(
 	DEBUGOUT("X3 = %d\n", x3);
 	uint32_t b4 = ((int32_t)(calData.ac4) * (uint32_t)(x3 + 32768)) >> 15;
 	DEBUGOUT("B4 = %d\n", b4);
-	uint32_t b7 = (uint32_t)((int32_t)(rawPressure) - b3) * (50000 >> mode);
+	uint32_t b7 = (uint32_t)(rawPressure - b3) * (50000 >> mode);
 	DEBUGOUT("B7 = %d\n", b7);
 	if (b7 < 0x80000000) {
 		pressure = (b7 << 1) / b4;
