@@ -9,54 +9,64 @@
 #include "i2cAdapter.hpp"
 #include "stdint.h"
 
-void I2CAdapter::Init_I2C_PinMux(void)
+// LPCXpresso 1549 Board Configuration Options
+static bool LPCXpresso1549_boardIsI2CMaster;
+static uint32_t LPCXpresso1549_i2cBitrate; // Max 3.4 MHz
+static enum I2CModeEnum LPCXpresso1549_i2cMode;
+static I2CM_XFER_T LPCXpresso1549_i2cmXferRec;
+static uint32_t LPCXpresso1549_I2C_CLK_DIVIDER_1P8MHZ; // = 40
+
+void LPCXpresso1549_Init_I2C_PinMux(void)
 {
-	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN | i2cMode);
-	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN | i2cMode);
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 22, IOCON_DIGMODE_EN | LPCXpresso1549_i2cMode);
+	Chip_IOCON_PinMuxSet(LPC_IOCON, 0, 23, IOCON_DIGMODE_EN | LPCXpresso1549_i2cMode);
 	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SCL);
 	Chip_SWM_EnableFixedPin(SWM_FIXED_I2C0_SDA);
 }
 
-void I2CAdapter::setupI2CMaster(void)
+void LPCXpresso1549_setupI2CMaster(void)
 {
 	// Enable I2C clock and reset I2C peripheral - the boot ROM does not
 	// 	do this
 	Chip_I2C_Init(LPC_I2C0);
 
 	// Setup clock rate for I2C
-	Chip_I2C_SetClockDiv(LPC_I2C0, I2C_CLK_DIVIDER_1P8MHZ);
+	Chip_I2C_SetClockDiv(LPC_I2C0, LPCXpresso1549_I2C_CLK_DIVIDER_1P8MHZ);
 
 	// Setup I2CM transfer rate
-	Chip_I2CM_SetBusSpeed(LPC_I2C0, i2cBitrate);
+	Chip_I2CM_SetBusSpeed(LPC_I2C0, LPCXpresso1549_i2cBitrate);
 
 	// Enable Master Mode
 	Chip_I2CM_Enable(LPC_I2C0);
 }
 
-void I2CAdapter::setupI2CSlave(void)
+void LPCXpresso1549_setupI2CSlave(void)
 {
 	// IMPLEMENT ME!
 }
 
-
+// Constructor for LPCXpresso 1549 board
 I2CAdapter::I2CAdapter(
+		enum boardEnum boardName,
 		bool boardIsMaster,
 		uint32_t bitrate,
 		enum I2CModeEnum mode)
 {
-	I2C_CLK_DIVIDER_1P8MHZ = 40;
-	boardIsI2CMaster = boardIsMaster;
+	board = boardName;
+	LPCXpresso1549_I2C_CLK_DIVIDER_1P8MHZ = 40;
+	LPCXpresso1549_boardIsI2CMaster = boardIsMaster;
 	if (bitrate > 3400000) {
 		bitrate = 3400000;
 	}
-	i2cBitrate = bitrate;
-	i2cMode = mode;
+	LPCXpresso1549_i2cBitrate = bitrate;
 
-	Init_I2C_PinMux();
+	LPCXpresso1549_i2cMode = mode;
+
+	LPCXpresso1549_Init_I2C_PinMux();
 	if (boardIsMaster) {
-		setupI2CMaster();
+		LPCXpresso1549_setupI2CMaster();
 	} else {
-		setupI2CSlave();
+		LPCXpresso1549_setupI2CSlave();
 	}
 	// Disable the interrupt for the I2C
 	NVIC_DisableIRQ(I2C0_IRQn);
@@ -70,19 +80,19 @@ bool I2CAdapter::read(
 		uint16_t rxSize)
 {
 	// Setup I2C transfer record
-	i2cmXferRec.slaveAddr = address;
-	i2cmXferRec.status = 0;
-	i2cmXferRec.txSz = txSize;
-	i2cmXferRec.rxSz = rxSize;
-	i2cmXferRec.txBuff = txBufferPtr;
-	i2cmXferRec.rxBuff = rxBufferPtr;
+	LPCXpresso1549_i2cmXferRec.slaveAddr = address;
+	LPCXpresso1549_i2cmXferRec.status = 0;
+	LPCXpresso1549_i2cmXferRec.txSz = txSize;
+	LPCXpresso1549_i2cmXferRec.rxSz = rxSize;
+	LPCXpresso1549_i2cmXferRec.txBuff = txBufferPtr;
+	LPCXpresso1549_i2cmXferRec.rxBuff = rxBufferPtr;
 
-	Chip_I2CM_XferBlocking(LPC_I2C0, &i2cmXferRec);
+	Chip_I2CM_XferBlocking(LPC_I2C0, &LPCXpresso1549_i2cmXferRec);
 
 	// Test for valid operation
-	if (i2cmXferRec.status != I2CM_STATUS_OK) {
+	if (LPCXpresso1549_i2cmXferRec.status != I2CM_STATUS_OK) {
 		DEBUGOUT("Error %d reading from device %x\n",
-				i2cmXferRec.status,
+				LPCXpresso1549_i2cmXferRec.status,
 				address);
 		return false;
 	}
@@ -95,19 +105,19 @@ bool I2CAdapter::write(
 		uint16_t txSize)
 {
 	// Setup I2C transfer record
-	i2cmXferRec.slaveAddr = address;
-	i2cmXferRec.status = 0;
-	i2cmXferRec.txSz = txSize;
-	i2cmXferRec.rxSz = 0;
-	i2cmXferRec.txBuff = txBufferPtr;
-	i2cmXferRec.rxBuff = NULL;
+	LPCXpresso1549_i2cmXferRec.slaveAddr = address;
+	LPCXpresso1549_i2cmXferRec.status = 0;
+	LPCXpresso1549_i2cmXferRec.txSz = txSize;
+	LPCXpresso1549_i2cmXferRec.rxSz = 0;
+	LPCXpresso1549_i2cmXferRec.txBuff = txBufferPtr;
+	LPCXpresso1549_i2cmXferRec.rxBuff = NULL;
 
-	Chip_I2CM_XferBlocking(LPC_I2C0, &i2cmXferRec);
+	Chip_I2CM_XferBlocking(LPC_I2C0, &LPCXpresso1549_i2cmXferRec);
 
 	// Test for valid operation
-	if (i2cmXferRec.status != I2CM_STATUS_OK) {
+	if (LPCXpresso1549_i2cmXferRec.status != I2CM_STATUS_OK) {
 		DEBUGOUT("Error %d writing to device %x\n",
-				i2cmXferRec.status,
+				LPCXpresso1549_i2cmXferRec.status,
 				address);
 		return false;
 	}

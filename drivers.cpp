@@ -29,14 +29,15 @@ int main(void) {
 	}
 
 	// I2C Adapter
-	I2CAdapter i2cAd(true, 100000, I2C_STANDARD);
+	I2CAdapter i2cAd(LPCXPRESSO_1549, true, 100000, I2C_STANDARD);
 
 	// BMP180
-	BMP180Sensor bmp(false, &i2cAd, STANDARD);
+	//BMP180Sensor bmp(false, &i2cAd, STANDARD);
 
 	// L3GD20H
-	//L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
-	//gyro.powerOnEnXYZ();
+	L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
+	gyro.powerOnEnXYZ();
+	gyro.calibrateXYZ();
 
 	// LSM303DLC
 	//LSM303DLHCSensor mag(&i2cAd);
@@ -86,17 +87,17 @@ int main(void) {
 		bmp.getTempAndPres(temperature, pressure);
 		DEBUGOUT("Temperature = %d degrees C\n", temperature/10);
 		DEBUGOUT("Pressure = %d Pa\n", pressure);
-		DEBUGOUT("--------\n");
-		*/
+		DEBUGOUT("--------\n");*/
 
 		// Poll gyro
 		int32_t x;
 		int32_t y;
 		int32_t z;
 		gyro.getXYZ(x, y, z);
-		DEBUGOUT("X = %d mdps\n", x);
-		DEBUGOUT("Y = %d mdps\n", y);
-		DEBUGOUT("Z = %d mdps\n", z);
+		DEBUGOUT("X = %d dps\n", x/1000);
+		DEBUGOUT("Y = %d dps\n", y/1000);
+		DEBUGOUT("Z = %d dps\n", z/1000);
+		DEBUGOUT("--------\n");
 
 		// Poll mag
 		//mag.verifyId();

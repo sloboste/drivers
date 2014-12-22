@@ -14,14 +14,13 @@ L3GD20HSensor::L3GD20HSensor(I2CAdapter * i2cAdPtr,
 {
 	i2cAdapterPtr = i2cAdPtr;
 	if (sensitivityRange < PLUS_MINUS_245DPS ||
-			sensitivityRange < PLUS_MINUS_2000DPS) {
+			sensitivityRange > PLUS_MINUS_2000DPS) {
 		sensitivity = PLUS_MINUS_245DPS;
 	} else {
 		sensitivity = sensitivityRange;
 	}
 	verifyId();
 	setSensitivity(sensitivity);
-	calibrateXYZ();
 }
 
 bool L3GD20HSensor::verifyId(void)
@@ -44,6 +43,7 @@ void L3GD20HSensor::setSensitivity(enum sensitivityRangeEnum sensitivityRange)
 	uint8_t txBuff[2] = { CTRL4, 0x00 };
 	uint8_t rxBuff;
 	i2cAdapterPtr->read(L3GD20H_I2C_ADDR_7BIT, txBuff, 1, &rxBuff, 1);
+	txBuff[1] = rxBuff;
 	uint16_t s;
 	switch (sensitivity) {
 	case PLUS_MINUS_2000DPS:
@@ -65,15 +65,17 @@ void L3GD20HSensor::setSensitivity(enum sensitivityRangeEnum sensitivityRange)
 
 void L3GD20HSensor::calibrateXYZ(void)
 {
+	DEBUGOUT("Begin calibrateXYZ\n");
 	// Determine zero bias
 	const uint32_t numSamples = 500;
-	long long int averages[3] = { 0, 0, 0 };
+	uint64_t averages[3] = { 0, 0, 0 };
 	uint16_t temps[3];
 	for (uint32_t i = 0; i < numSamples; ++i) {
 		getRawXYZ(temps[0], temps[1], temps[2]);
 		averages[0] += temps[0];
 		averages[1] += temps[1];
 		averages[2] += temps[2];
+		//DEBUGOUT("i = %d\n", i);
 	}
 	calData.xOffset = (uint32_t) (averages[0] / numSamples);
 	calData.yOffset = (uint32_t) (averages[1] / numSamples);
@@ -81,37 +83,45 @@ void L3GD20HSensor::calibrateXYZ(void)
 	DEBUGOUT("xOffset = %x\n", calData.xOffset);
 	DEBUGOUT("yOffset = %x\n", calData.yOffset);
 	DEBUGOUT("zOffset = %x\n", calData.zOffset);
+	DEBUGOUT("End calibrateXYZ\n");
 }
 
 void L3GD20HSensor::powerOnEnXYZ(void)
 {
-	// Write to reg ctrl1
-	uint8_t txBuff[2] = {
-		CTRL1,
-		X_ENABLE_MASK | Y_ENABLE_MASK | Z_ENABLE_MASK | NORMAL_MODE_ENABLE_MASK };
-	i2cAdapterPtr->write(L3GD20H_I2C_ADDR_7BIT, txBuff, 1);
+	// Read from reg ctrl1, bit mask, write to reg ctrl1
+	uint8_t txBuff[2] = { CTRL1, 0x00 };
+	uint8_t rxBuff;
+	i2cAdapterPtr->read(L3GD20H_I2C_ADDR_7BIT, txBuff, 1, &rxBuff, 1);
+	txBuff[1] = rxBuff | X_ENABLE_MASK | Y_ENABLE_MASK |
+			Z_ENABLE_MASK | NORMAL_MODE_ENABLE_MASK;
+	i2cAdapterPtr->write(L3GD20H_I2C_ADDR_7BIT, txBuff, 2);
 	DEBUGOUT("Powered on and enabled x, y, z\n");
 }
 
 void L3GD20HSensor::getRawXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
 {
 	// Read from X_L, X_H, Y_L, Y_H, Z_L, Z_H
-	uint8_t txBuff[6] = { OUT_X_L, OUT_X_H, OUT_Y_L, OUT_Y_H, OUT_Z_L, OUT_Z_H };
+	uint8_t txBuff = OUT_X_L | AUTOINC_MASK;
 	uint8_t rxBuff[6];
-	i2cAdapterPtr->read(L3GD20H_I2C_ADDR_7BIT, txBuff, 6, rxBuff, 6);
-	//DEBUGOUT("X_L = %x\n", rxBuff[0]);
-	//DEBUGOUT("X_H = %x\n", rxBuff[1]);
-	//DEBUGOUT("Y_L = %x\n", rxBuff[2]);
-	//DEBUGOUT("Y_H = %x\n", rxBuff[3]);
-	//DEBUGOUT("Z_L = %x\n", rxBuff[4]);
-	//DEBUGOUT("Z_H = %x\n", rxBuff[5]);
+	i2cAdapterPtr->read(L3GD20H_I2C_ADDR_7BIT, &txBuff, 1, rxBuff, 6);
+	/*DEBUGOUT("X_L = %x\n", rxBuff[0]);
+	DEBUGOUT("X_H = %x\n", rxBuff[1]);
+	DEBUGOUT("Y_L = %x\n", rxBuff[2]);
+	DEBUGOUT("Y_H = %x\n", rxBuff[3]);
+	DEBUGOUT("Z_L = %x\n", rxBuff[4]);
+	DEBUGOUT("Z_H = %x\n", rxBuff[5]);*/
 	x = rxBuff[0] + (rxBuff[1] << 8);
 	y = rxBuff[2] + (rxBuff[3] << 8);
 	z = rxBuff[4] + (rxBuff[5] << 8);
+	/*DEBUGOUT("rawX = %x\n", x);
+	DEBUGOUT("rawY = %x\n", y);
+	DEBUGOUT("rawZ = %x\n", z);*/
 }
 
-void L3GD20HSensor::getXYZ(int32_t &x, int32_t &y, int32_t &z)
+void L3GD20HSensor::getXYZ(int32_t &x, int32_t &y, int32_t &z) // BROKEN
 {
+	// FIXME: x value isn't zero when stationary. y and z never go negative.
+
 	// Get raw x, y, z values
 	uint16_t rawX;
 	uint16_t rawY;
