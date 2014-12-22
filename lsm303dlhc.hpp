@@ -11,25 +11,7 @@
 #include "i2cAdapter.hpp"
 #include "stdint.h"
 
-// Registers
-enum LSM303DLHCRegEnum {
-	CTRL_REG1_A			= 0x20,
-	CTRL_REG2_A			= 0x21,
-	CTRL_REG3_A			= 0x22,
-	CTRL_REG4_A			= 0x23,
-	CTRL_REG5_A			= 0x24,
-	CTRL_REG6_A			= 0x25,
-	REFERENCE_A			= 0x26,
-	STATIS_REG_A		= 0x27,
-	OUT_X_L_A			= 0x28,
-	OUT_X_H_A			= 0x29,
-	OUT_Y_L_A			= 0x2A,
-	OUT_Y_H_A			= 0x2B,
-	OUT_Z_L_A			= 0x2C,
-	OUT_Z_H_A			= 0x2D,
-};
-
-// LSM303DLHC Triple Axis Magnetometer
+// LSM303DLHC Triple Axis Accelerometer, Magnetometer, and Temperature Sensor
 class LSM303DLHCSensor {
 private:
 	I2CAdapter * i2cAdapterPtr;
@@ -39,7 +21,7 @@ private:
 	 * Parameters:
 	 *
 	 */
-	bool verifyId(void);
+	int16_t getRawTemperature(void);
 
 public:
 	/* Use:
@@ -48,6 +30,41 @@ public:
 	 *
 	 */
 	LSM303DLHCSensor(I2CAdapter * i2cAdPtr);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void enableTemperature(void);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void enableAccelXYZ(void);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	int32_t getTemperature(void);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void getRawMagXYZ(uint16_t &x, uint16_t &y, uint16_t &z);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void getRawAccelXYZ(uint16_t &x, uint16_t &y, uint16_t &z);
 
 };
 

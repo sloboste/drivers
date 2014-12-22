@@ -13,7 +13,7 @@
 
 #include "bmp180.hpp"
 #include "l3gd20h.hpp"
-//#include"lsm303dlhc.hpp"
+#include"lsm303dlhc.hpp"
 
 int main(void) {
 
@@ -35,12 +35,13 @@ int main(void) {
 	//BMP180Sensor bmp(false, &i2cAd, STANDARD);
 
 	// L3GD20H
-	L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
-	gyro.powerOnEnXYZ();
-	gyro.calibrateXYZ();
+	//L3GD20HSensor gyro(&i2cAd, PLUS_MINUS_245DPS);
+	//gyro.powerOnEnXYZ();
+	//gyro.calibrateXYZ();
 
 	// LSM303DLC
-	//LSM303DLHCSensor mag(&i2cAd);
+	LSM303DLHCSensor mag(&i2cAd);
+	mag.enableTemperature();
 
     // Force the counter to be placed into memory
     volatile static int i = 0 ;
@@ -89,18 +90,19 @@ int main(void) {
 		DEBUGOUT("Pressure = %d Pa\n", pressure);
 		DEBUGOUT("--------\n");*/
 
-		// Poll gyro
+		/* Poll gyro
 		int32_t x;
 		int32_t y;
 		int32_t z;
-		gyro.getXYZ(x, y, z);
+		gyro.getXYZ(x, y, z); // BROKEN!!
 		DEBUGOUT("X = %d dps\n", x/1000);
 		DEBUGOUT("Y = %d dps\n", y/1000);
 		DEBUGOUT("Z = %d dps\n", z/1000);
-		DEBUGOUT("--------\n");
+		DEBUGOUT("--------\n");*/
 
 		// Poll mag
-		//mag.verifyId();
+		DEBUGOUT("Temperature = %d degrees C\n", mag.getTemperature());
+		DEBUGOUT("--------\n");
 	}
 
     return 0 ;
