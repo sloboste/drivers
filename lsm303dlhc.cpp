@@ -10,7 +10,8 @@
 
 // Miscellaneous Constants
 enum {
-	LSM303DLHC_ADDR_7BIT 	= 0x1E,
+	ACCEL_ADDR_7BIT			= 0x19,
+	MAG_ADDR_7BIT 			= 0x1E,
 	TEMP_ENABLE_MASK 		= 0x80,
 	AUTOINC_MASK			= 0x80
 };
@@ -50,7 +51,7 @@ enum LSM303DLHCRegEnum {
 	CRA_REG_M			= 0x00,
 	CRB_REG_M			= 0x01,
 	MR_REG_M			= 0x02,
-	OUT_X_h_M			= 0x03,
+	OUT_X_H_M			= 0x03,
 	OUT_X_L_M			= 0x04,
 	OUT_Y_H_M			= 0x05,
 	OUT_Y_L_M			= 0x06,
@@ -72,48 +73,115 @@ LSM303DLHCSensor::LSM303DLHCSensor(I2CAdapter * i2cAdPtr)
 
 void LSM303DLHCSensor::enableAccelXYZ(void)
 {
-
+	// Read from CTRL_REG1_A, bit mask, and write back
+	uint8_t txBuff[2] = { CTRL_REG1_A, 0x00 };
+	uint8_t rxBuff[1];
+	i2cAdapterPtr->read(ACCEL_ADDR_7BIT, txBuff, 1, rxBuff, 1);
+	txBuff[1] = rxBuff[0] | 0x07;
+	i2cAdapterPtr->write(ACCEL_ADDR_7BIT, txBuff, 2);
 }
 
-void LSM303DLHCSensor::enableTemperature(void) // MAYBE BROKEN
+/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+void LSM303DLHCSensor::enableTemperature(void)
 {
 	// Read from CRA_REG_M, bit mask, and write back
 	DEBUGOUT("Enabling temperature\n");
 	uint8_t txBuff[2] = { CRA_REG_M, 0x00 };
 	uint8_t rxBuff;
-	i2cAdapterPtr->read(LSM303DLHC_ADDR_7BIT, txBuff, 1, &rxBuff, 1);
+	i2cAdapterPtr->read(MAG_ADDR_7BIT, txBuff, 1, &rxBuff, 1);
 	txBuff[1] = rxBuff | TEMP_ENABLE_MASK;
-	i2cAdapterPtr->write(LSM303DLHC_ADDR_7BIT, txBuff, 2);
+	i2cAdapterPtr->write(MAG_ADDR_7BIT, txBuff, 2);
 }
+*/
 
-void LSM303DLHCSensor::getRawAccelXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
+void LSM303DLHCSensor::getAccelXYZ(int32_t &x, int32_t &y, int32_t &z)
 {
+	// FIXME: put in math equations
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
+	getRawAccelXYZ(rawX, rawY, rawZ);
 
+	// DO MATH HERE????
+
+	x = (int32_t) rawX;
+	y = (int32_t) rawY;
+	z = (int32_t) rawZ;
 }
 
-void LSM303DLHCSensor::getRawMagXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
+void LSM303DLHCSensor::getMagXYZ(int32_t &x, int32_t &y, int32_t &z)
 {
+	// FIXME: put in math equations
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
+	getRawMagXYZ(rawX, rawY, rawZ);
 
+	// DO MATH HERE????
+
+	x = (int32_t) rawX;
+	y = (int32_t) rawY;
+	z = (int32_t) rawZ;
 }
 
-int16_t LSM303DLHCSensor::getRawTemperature(void) // BROKEN
+void LSM303DLHCSensor::getRawAccelXYZ(int16_t &x, int16_t &y, int16_t &z)
+{
+	// Read from OUT_X_L_A, OUT_X_H_A, OUT_Y_L_A, OUT_Y_H_A, OUT_Z_L_A, OUT_Z_H_A
+	uint8_t txBuff[1] = { OUT_X_L_A | AUTOINC_MASK };
+	uint8_t rxBuff[6];
+	i2cAdapterPtr->read(ACCEL_ADDR_7BIT, txBuff, 1, rxBuff, 6);
+	x = (rxBuff[1] << 8) + rxBuff[0];
+	y = (rxBuff[3] << 8) + rxBuff[2];
+	z = (rxBuff[5] << 8) + rxBuff[4];
+	printf("rawX_A = %x\n", x);
+	printf("rawY_A = %x\n", y);
+	printf("rawZ_A = %x\n", z);
+}
+
+void LSM303DLHCSensor::getRawMagXYZ(int16_t &x, int16_t &y, int16_t &z)
+{
+	// Read from OUT_X_H_M, OUT_X_L_M, OUT_Z_H_M, OUT_Z_L_M, OUT_Y_H_M, OUT_Y_L_M
+	uint8_t txBuff[1] = { OUT_X_H_M | AUTOINC_MASK };
+	uint8_t rxBuff[6];
+	i2cAdapterPtr->read(MAG_ADDR_7BIT, txBuff, 1, rxBuff, 6);
+	x = (rxBuff[0] << 8) + rxBuff[1];
+	z = (rxBuff[2] << 8) + rxBuff[3];
+	y = (rxBuff[4] << 8) + rxBuff[5];
+	printf("rawX = %x\n", x);
+	printf("rawZ = %x\n", z);
+	printf("rawY = %x\n", y);
+}
+
+/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+int16_t LSM303DLHCSensor::getRawTemperature(void)
 {
 	// Read from TEMP_OUT_H_M and TEMP_OUT_L_M
 	int16_t rawTemperature;
 	uint8_t txBuff = TEMP_OUT_H_M | AUTOINC_MASK;
 	uint8_t rxBuff[2];
-	i2cAdapterPtr->read(LSM303DLHC_ADDR_7BIT, &txBuff, 1, rxBuff, 2);
+	i2cAdapterPtr->read(MAG_ADDR_7BIT, &txBuff, 1, rxBuff, 2);
 	DEBUGOUT("TEMP_OUT_H_M = %x\n", rxBuff[0]);
-	DEBUGOUT("TEMP_OUT_H_L = %x\n", rxBuff[1]);
-	rawTemperature = (rxBuff[0] << 4) + rxBuff[1];
+	DEBUGOUT("TEMP_OUT_L_M = %x\n", rxBuff[1]);
+	rawTemperature = (rxBuff[0] << 4) + (rxBuff[1] >> 4);
 	DEBUGOUT("rawTemperature = %x  8LSB/degree, 12-bit res\n", rawTemperature);
 	return rawTemperature;
 }
+*/
 
-int32_t LSM303DLHCSensor::getTemperature(void) // MAYBE BROKEN
+/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+int32_t LSM303DLHCSensor::getTemperature(void)
 {
 	// Convert raw temperature to temp in degrees Celcius
 	int32_t temperature = (int32_t) getRawTemperature();
 	temperature /= 8;
 	return temperature;
 }
+*/
+
+void LSM303DLHCSensor::setMagMode(enum magModeEnum m)
+{
+	// Write the mode to register MR_REG_M
+	uint8_t txBuff[2] = { MR_REG_M, m };
+	i2cAdapterPtr->write(MAG_ADDR_7BIT, txBuff, 2);
+}
+

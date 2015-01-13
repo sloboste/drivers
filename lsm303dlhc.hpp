@@ -11,17 +11,38 @@
 #include "i2cAdapter.hpp"
 #include "stdint.h"
 
+enum magModeEnum {
+	CONTINUOUS			= 0x00,
+	SINGLE_CONVERSION	= 0x01,
+	SLEEP				= 0x02
+};
+
 // LSM303DLHC Triple Axis Accelerometer, Magnetometer, and Temperature Sensor
 class LSM303DLHCSensor {
 private:
 	I2CAdapter * i2cAdapterPtr;
+
+	/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+	 *  Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	// int16_t getRawTemperature(void);
 
 	/* Use:
 	 *
 	 * Parameters:
 	 *
 	 */
-	int16_t getRawTemperature(void);
+	void getRawAccelXYZ(int16_t &x, int16_t &y, int16_t &z);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void getRawMagXYZ(int16_t &x, int16_t &y, int16_t &z);
 
 public:
 	/* Use:
@@ -31,12 +52,13 @@ public:
 	 */
 	LSM303DLHCSensor(I2CAdapter * i2cAdPtr);
 
-	/* Use:
-	 *
+	/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+	 * Use:
+	 *	None.
 	 * Parameters:
-	 *
+	 *	None.
 	 */
-	void enableTemperature(void);
+	//void enableTemperature(void);
 
 	/* Use:
 	 *
@@ -45,26 +67,34 @@ public:
 	 */
 	void enableAccelXYZ(void);
 
-	/* Use:
-	 *
+	/* DON'T USE THIS. NOT ENABLED ON THE CHIP!!
+	 * Use:
+	 *	None.
 	 * Parameters:
-	 *
+	 *	None.
 	 */
-	int32_t getTemperature(void);
+	// int32_t getTemperature(void);
 
 	/* Use:
 	 *
 	 * Parameters:
 	 *
 	 */
-	void getRawMagXYZ(uint16_t &x, uint16_t &y, uint16_t &z);
+	void getMagXYZ(int32_t &x, int32_t &y, int32_t &z);
 
 	/* Use:
 	 *
 	 * Parameters:
 	 *
 	 */
-	void getRawAccelXYZ(uint16_t &x, uint16_t &y, uint16_t &z);
+	void getAccelXYZ(int32_t &x, int32_t &y, int32_t &z);
+
+	/* Use:
+	 *
+	 * Parameters:
+	 *
+	 */
+	void setMagMode(enum magModeEnum m);
 
 };
 

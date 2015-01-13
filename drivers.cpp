@@ -40,8 +40,12 @@ int main(void) {
 	//gyro.calibrateXYZ();
 
 	// LSM303DLC
-	LSM303DLHCSensor mag(&i2cAd);
-	mag.enableTemperature();
+	LSM303DLHCSensor accelMag(&i2cAd);
+	accelMag.setMagMode(CONTINUOUS);
+	accelMag.enableAccelXYZ();
+
+	// Wait for a bit before doing anything
+	for (volatile int n = 0; n < 100000; ++n) n;
 
     // Force the counter to be placed into memory
     volatile static int i = 0 ;
@@ -94,15 +98,25 @@ int main(void) {
 		int32_t x;
 		int32_t y;
 		int32_t z;
-		gyro.getXYZ(x, y, z); // BROKEN!!
+		gyro.getXYZ(x, y, z);
 		DEBUGOUT("X = %d dps\n", x/1000);
 		DEBUGOUT("Y = %d dps\n", y/1000);
 		DEBUGOUT("Z = %d dps\n", z/1000);
 		DEBUGOUT("--------\n");*/
 
 		// Poll mag
-		DEBUGOUT("Temperature = %d degrees C\n", mag.getTemperature());
-		DEBUGOUT("--------\n");
+		int32_t x;
+		int32_t y;
+		int32_t z;
+		//accelMag.getMagXYZ(x, y, z);
+		//printf("X_M = %d\n", x);
+		//printf("Y_M = %d\n", y);
+		//printf("Z_M = %d\n", z);
+		accelMag.getAccelXYZ(x, y, z);
+		printf("X_A = %ld\n", x);
+		printf("Y_A = %ld\n", y);
+		printf("Z_A = %ld\n", z);
+		printf("--------\n");
 	}
 
     return 0 ;

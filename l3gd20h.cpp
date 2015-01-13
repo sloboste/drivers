@@ -68,8 +68,8 @@ void L3GD20HSensor::calibrateXYZ(void)
 	DEBUGOUT("Begin calibrateXYZ\n");
 	// Determine zero bias
 	const uint32_t numSamples = 500;
-	uint64_t averages[3] = { 0, 0, 0 };
-	uint16_t temps[3];
+	int64_t averages[3] = { 0, 0, 0 };
+	int16_t temps[3];
 	for (uint32_t i = 0; i < numSamples; ++i) {
 		getRawXYZ(temps[0], temps[1], temps[2]);
 		averages[0] += temps[0];
@@ -98,7 +98,7 @@ void L3GD20HSensor::powerOnEnXYZ(void)
 	DEBUGOUT("Powered on and enabled x, y, z\n");
 }
 
-void L3GD20HSensor::getRawXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
+void L3GD20HSensor::getRawXYZ(int16_t &x, int16_t &y, int16_t &z)
 {
 	// Read from X_L, X_H, Y_L, Y_H, Z_L, Z_H
 	uint8_t txBuff = OUT_X_L | AUTOINC_MASK;
@@ -118,14 +118,12 @@ void L3GD20HSensor::getRawXYZ(uint16_t &x, uint16_t &y, uint16_t &z)
 	DEBUGOUT("rawZ = %x\n", z);*/
 }
 
-void L3GD20HSensor::getXYZ(int32_t &x, int32_t &y, int32_t &z) // BROKEN
+void L3GD20HSensor::getXYZ(int32_t &x, int32_t &y, int32_t &z)
 {
-	// FIXME: x value isn't zero when stationary. y and z never go negative.
-
 	// Get raw x, y, z values
-	uint16_t rawX;
-	uint16_t rawY;
-	uint16_t rawZ;
+	int16_t rawX;
+	int16_t rawY;
+	int16_t rawZ;
 	getRawXYZ(rawX, rawY, rawZ);
 	x = (int32_t) rawX;
 	y = (int32_t) rawY;
@@ -137,21 +135,22 @@ void L3GD20HSensor::getXYZ(int32_t &x, int32_t &y, int32_t &z) // BROKEN
 	z -= calData.zOffset;
 
 	// Apply sensitivity multipliers
+	// TODO: Check the float int multiplication...
 	switch (sensitivity) {
 	case PLUS_MINUS_2000DPS:
-		x *= MULTIPLIER_2000DPS;
-		y *= MULTIPLIER_2000DPS;
-		z *= MULTIPLIER_2000DPS;
+		x = (int32_t)((float)(x) * MULTIPLIER_2000DPS);
+		y = (int32_t)((float)(y) * MULTIPLIER_2000DPS);
+		z = (int32_t)((float)(z) * MULTIPLIER_2000DPS);
 		break;
 	case PLUS_MINUS_500DPS:
-		x *= MULTIPLIER_500DPS;
-		y *= MULTIPLIER_500DPS;
-		z *= MULTIPLIER_500DPS;
+		x = (int32_t)((float)(x) * MULTIPLIER_500DPS);
+		y = (int32_t)((float)(y) * MULTIPLIER_500DPS);
+		z = (int32_t)((float)(z) * MULTIPLIER_500DPS);
 		break;
 	default: // PLUS_MINUS_245DPS
-		x *= MULTIPLIER_245DPS;
-		y *= MULTIPLIER_245DPS;
-		z *= MULTIPLIER_245DPS;
+		x = (int32_t)((float)(x) * MULTIPLIER_245DPS);
+		y = (int32_t)((float)(y) * MULTIPLIER_245DPS);
+		z = (int32_t)((float)(z) * MULTIPLIER_245DPS);
 		break;
 	}
 }

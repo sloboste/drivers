@@ -115,7 +115,7 @@ private:
 	 *				 rate of the z axis when the method returns. Passed by
 	 *				 reference.
 	 */
-	void getRawXYZ(uint16_t &x, uint16_t &y, uint16_t &z);
+	void getRawXYZ(int16_t &x, int16_t &y, int16_t &z);
 public:
 	/* Use:
 	 *	Create an instance of the L3GD20H gyroscope with a specified sensitivity.
